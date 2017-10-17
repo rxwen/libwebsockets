@@ -56,7 +56,7 @@
 /* #undef LWS_WITH_LIBUV */
 
 /* Enable libevent io loop */
-/* #undef LWS_WITH_LIBEVENT */
+#define LWS_WITH_LIBEVENT
 
 /* Build with support for ipv6 */
 /* #undef LWS_WITH_IPV6 */

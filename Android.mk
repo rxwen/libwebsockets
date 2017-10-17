@@ -20,7 +20,8 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/android_config \
 	$(LOCAL_PATH)/lib/mbedtls_wrapper/include \
 	$(LOCAL_PATH)/lib/mbedtls_wrapper/include/internal \
 	$(LOCAL_PATH)/lib/mbedtls_wrapper/include/platform \
-	external/mbedtls/include
+	external/mbedtls/include \
+	external/libevent/include
 
 LOCAL_CFLAGS += 
 
@@ -61,6 +62,7 @@ LOCAL_SRC_FILES := \
 	lib/mbedtls_wrapper/library/ssl_x509.c \
 	lib/mbedtls_wrapper/platform/ssl_pm.c \
 	lib/mbedtls_wrapper/platform/ssl_port.c \
+	lib/event-libs/libevent.c \
 	lib/ssl.c
 
 	#lib/event-libs/libev.c \
@@ -97,6 +99,7 @@ LOCAL_SRC_FILES := \
 LOCAL_LDLIBS += -ldl
 LOCAL_SHARED_LIBRARIES := \
 	libmbedtls \
+	libevent \
 	libz
 
 LOCAL_MODULE := libwebsockets
