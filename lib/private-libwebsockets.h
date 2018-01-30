@@ -27,6 +27,10 @@
 #define  _GNU_SOURCE
 #endif
 
+#if defined(__COVERITY__)
+typedef struct { long double x, y; } _Float128;
+#endif
+
 #ifdef LWS_HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -102,6 +106,11 @@ char *ets_strchr(const char *s, int c);
 #endif
 
 #if defined(WIN32) || defined(_WIN32)
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #if (WINVER < 0x0501)
 #undef WINVER
 #undef _WIN32_WINNT
@@ -187,7 +196,7 @@ int kill(int pid, int sig);
 #include <hubbub/parser.h>
 #endif
 #if defined(LWS_BUILTIN_GETIFADDRS)
- #include <getifaddrs.h>
+ #include "./misc/getifaddrs.h"
 #else
  #if !defined(LWS_WITH_ESP8266) && !defined(LWS_WITH_ESP32)
  #if defined(__HAIKU__)
@@ -346,9 +355,6 @@ esp8266_tcp_stream_bind(lws_sockfd_type fd, int port, struct lws *wsi);
 #endif
 #ifndef BYTE_ORDER
 #define BYTE_ORDER LITTLE_ENDIAN
-#endif
-#ifndef u_int64_t
-typedef unsigned __int64 u_int64_t;
 #endif
 
 #undef __P
@@ -1116,6 +1122,7 @@ struct lws_context {
 	unsigned int requested_kill:1;
 	unsigned int protocol_init_done:1;
 	unsigned int ssl_gate_accepts:1;
+	unsigned int doing_protocol_init;
 	/*
 	 * set to the Thread ID that's doing the service loop just before entry
 	 * to poll indicates service thread likely idling in poll()
@@ -1623,7 +1630,6 @@ struct lws_h2_netconn {
 	unsigned int pad_length:1;
 	unsigned int collected_priority:1;
 	unsigned int is_first_header_char:1;
-	unsigned int seen_nonpseudoheader:1;
 	unsigned int zero_huff_padding:1;
 	unsigned int last_action_dyntable_resize:1;
 
@@ -1912,6 +1918,7 @@ struct lws {
 	unsigned int hdr_parsing_completed:1;
 	unsigned int http2_substream:1;
 	unsigned int upgraded_to_http2:1;
+	unsigned int seen_nonpseudoheader:1;
 	unsigned int listener:1;
 	unsigned int user_space_externally_allocated:1;
 	unsigned int socket_is_permanently_unusable:1;

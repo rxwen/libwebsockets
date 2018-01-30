@@ -482,8 +482,9 @@ lws_close_free_wsi(struct lws *wsi, enum lws_close_status reason)
 	    wsi->mode == LWSCM_WSCL_ISSUE_HANDSHAKE)
 		goto just_kill_connection;
 
-	if (wsi->mode == LWSCM_HTTP_SERVING ||
-	    wsi->mode == LWSCM_HTTP2_SERVING) {
+	if (!wsi->told_user_closed &&
+	    (wsi->mode == LWSCM_HTTP_SERVING ||
+	     wsi->mode == LWSCM_HTTP2_SERVING)) {
 		if (wsi->user_space)
 			wsi->vhost->protocols->callback(wsi,
 						LWS_CALLBACK_HTTP_DROP_PROTOCOL,
@@ -583,7 +584,7 @@ just_kill_connection:
 	lws_remove_child_from_any_parent(wsi);
 	n = 0;
 
-	if (wsi->user_space) {
+	if (!wsi->told_user_closed && wsi->user_space) {
 	    lwsl_debug("%s: %p: DROP_PROTOCOL %s\n", __func__, wsi,
 		       wsi->protocol->name);
 		wsi->protocol->callback(wsi,
@@ -656,8 +657,10 @@ just_kill_connection:
 				  __func__, wsi, (int)(long)wsi->desc.sockfd,
 				  wsi->state);
 			if (!wsi->socket_is_permanently_unusable &&
-			    lws_sockfd_valid(wsi->desc.sockfd))
+			    lws_sockfd_valid(wsi->desc.sockfd)) {
+				wsi->socket_is_permanently_unusable = 1;
 				n = shutdown(wsi->desc.sockfd, SHUT_WR);
+			}
 		}
 		if (n)
 			lwsl_debug("closing: shutdown (state %d) ret %d\n",
@@ -2281,7 +2284,11 @@ lws_socket_bind(struct lws_vhost *vhost, lws_sockfd_type sockfd, int port,
 				  ntohs(((struct sockaddr_in6 *) &sin)->sin6_port) :
 				  ntohs(((struct sockaddr_in *) &sin)->sin_port);
 #else
-		port = ntohs(((struct sockaddr_in *) &sin)->sin_port);
+		{
+			struct sockaddr_in sain;
+			memcpy(&sain, &sin, sizeof(sain));
+			port = ntohs(sain.sin_port);
+		}
 #endif
 #endif
 
@@ -2980,8 +2987,9 @@ lws_stats_log_dump(struct lws_context *context)
 
 #if defined(LWS_WITH_PEER_LIMITS)
 	m = 0;
-	for (n = 0; n < context->pl_hash_elements; n++)	{
-		lws_start_foreach_llp(struct lws_peer **, peer, context->pl_hash_table[n]) {
+	for (n = 0; n < (int)context->pl_hash_elements; n++) {
+		lws_start_foreach_llp(struct lws_peer **, peer,
+				      context->pl_hash_table[n]) {
 			m++;
 		} lws_end_foreach_llp(peer, next);
 	}
@@ -2993,7 +3001,7 @@ lws_stats_log_dump(struct lws_context *context)
 	}
 
 	if (m) {
-		for (n = 0; n < context->pl_hash_elements; n++)	{
+		for (n = 0; n < (int)context->pl_hash_elements; n++) {
 			char buf[72];
 
 			lws_start_foreach_llp(struct lws_peer **, peer, context->pl_hash_table[n]) {

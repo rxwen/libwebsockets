@@ -463,7 +463,7 @@ lws_ssl_capable_read(struct lws *wsi, unsigned char *buf, int len)
 
 	lwsl_debug("%p: SSL_read says %d\n", wsi, n);
 	/* manpage: returning 0 means connection shut down */
-	if (!n) {
+	if (!n || (n == -1 && errno == ENOTCONN)) {
 		wsi->socket_is_permanently_unusable = 1;
 
 		return LWS_SSL_CAPABLE_ERROR;
@@ -476,12 +476,12 @@ lws_ssl_capable_read(struct lws *wsi, unsigned char *buf, int len)
 		    m == SSL_ERROR_SYSCALL)
 			return LWS_SSL_CAPABLE_ERROR;
 
-		if (SSL_want_read(wsi->ssl)) {
+		if (m == SSL_ERROR_WANT_READ || SSL_want_read(wsi->ssl)) {
 			lwsl_debug("%s: WANT_READ\n", __func__);
 			lwsl_debug("%p: LWS_SSL_CAPABLE_MORE_SERVICE\n", wsi);
 			return LWS_SSL_CAPABLE_MORE_SERVICE;
 		}
-		if (SSL_want_write(wsi->ssl)) {
+		if (m == SSL_ERROR_WANT_WRITE || SSL_want_write(wsi->ssl)) {
 			lwsl_debug("%s: WANT_WRITE\n", __func__);
 			lwsl_debug("%p: LWS_SSL_CAPABLE_MORE_SERVICE\n", wsi);
 			return LWS_SSL_CAPABLE_MORE_SERVICE;

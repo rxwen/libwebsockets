@@ -528,10 +528,15 @@ next_child:
 
 notify:
 #endif
-	wsi->handling_pollout = 0;
 	wsi->leave_pollout_active = 0;
 
-	return lws_calllback_as_writeable(wsi);
+	n = lws_calllback_as_writeable(wsi);
+	wsi->handling_pollout = 0;
+
+	if (wsi->leave_pollout_active)
+		lws_change_pollfd(wsi, 0, LWS_POLLOUT);
+
+	return n;
 
 	/*
 	 * since these don't disable the POLLOUT, they are always doing the
@@ -1042,7 +1047,8 @@ lws_service_fd_tsi(struct lws_context *context, struct lws_pollfd *pollfd, int t
 			const unsigned char *c;
 
 			if (!ah->in_use || !ah->wsi || !ah->assigned ||
-			    now - ah->assigned < 60) {
+			    (ah->wsi->vhost && now - ah->assigned <
+			    ah->wsi->vhost->timeout_secs_ah_idle + 60)) {
 				ah = ah->next;
 				continue;
 			}
@@ -1067,6 +1073,8 @@ lws_service_fd_tsi(struct lws_context *context, struct lws_pollfd *pollfd, int t
 				c = lws_token_to_string(m);
 				if (!c)
 					break;
+				if (!(*c))
+					break;
 
 				len = lws_hdr_total_length(wsi, m);
 				if (!len || len > sizeof(buf) - 1) {
@@ -1084,6 +1092,11 @@ lws_service_fd_tsi(struct lws_context *context, struct lws_pollfd *pollfd, int t
 				m++;
 			} while (1);
 
+			/* explicitly detach the ah */
+
+			lws_header_table_force_to_detachable_state(wsi);
+			lws_header_table_detach(wsi, 0);
+
 			/* ... and then drop the connection */
 
 			if (wsi->desc.sockfd == our_fd)
@@ -1092,7 +1105,7 @@ lws_service_fd_tsi(struct lws_context *context, struct lws_pollfd *pollfd, int t
 
 			lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS);
 
-			ah = ah->next;
+			ah = pt->ah_list;
 		}
 
 #ifdef LWS_WITH_CGI
@@ -1342,14 +1355,16 @@ lws_service_fd_tsi(struct lws_context *context, struct lws_pollfd *pollfd, int t
 			break;
 
 #if defined(LWS_WITH_HTTP2)
-		wsi1 = lws_get_network_wsi(wsi);
-		if (wsi1 && wsi1->trunc_len)
-			/* We cannot deal with any kind of new RX
-			 * because we are dealing with a partial send
-			 * (new RX may trigger new http_action() that expect
-			 * to be able to send)
-			 */
-			break;
+		if (wsi->http2_substream || wsi->upgraded_to_http2) {
+			wsi1 = lws_get_network_wsi(wsi);
+			if (wsi1 && wsi1->trunc_len)
+				/* We cannot deal with any kind of new RX
+				 * because we are dealing with a partial send
+				 * (new RX may trigger new http_action() that
+				 * expect to be able to send)
+				 */
+				break;
+		}
 #endif
 
 		/* 2: RX Extension needs to be drained
@@ -1385,8 +1400,7 @@ lws_service_fd_tsi(struct lws_context *context, struct lws_pollfd *pollfd, int t
 
 		if (wsi->rxflow_buffer) {
 			lwsl_info("draining rxflow (len %d)\n",
-				wsi->rxflow_len - wsi->rxflow_pos
-			);
+				wsi->rxflow_len - wsi->rxflow_pos);
 			assert(wsi->rxflow_pos < wsi->rxflow_len);
 			/* well, drain it */
 			eff_buf.token = (char *)wsi->rxflow_buffer +
@@ -1637,6 +1651,14 @@ drain:
 			break;
 		}
 #endif
+	/*
+	 * something went wrong with parsing the handshake, and
+	 * we ended up back in the event loop without completing it
+	 */
+	case LWSCM_PRE_WS_SERVING_ACCEPT:
+		wsi->socket_is_permanently_unusable = 1;
+		goto close_and_handled;
+
 	default:
 #ifdef LWS_NO_CLIENT
 		break;

@@ -258,9 +258,10 @@ start_ws_handshake:
 #ifdef LWS_OPENSSL_SUPPORT
 		/* we can retry this... just cook the SSL BIO the first time */
 
-		if (wsi->use_ssl && !wsi->ssl) {
-			if (lws_ssl_client_bio_create(wsi))
-				return -1;
+		if (wsi->use_ssl && !wsi->ssl &&
+		    lws_ssl_client_bio_create(wsi) < 0) {
+			cce = "bio_create failed";
+			goto bail3;
 		}
 
 		if (wsi->use_ssl) {
@@ -656,11 +657,6 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 	}
 
 	if (!wsi->do_ws) {
-		if (n != 200 && n != 201 && n != 304 && n != 401) {
-			lwsl_notice("Connection failed with code %d\n", n);
-			cce = "HS: Server unrecognized response code";
-			goto bail2;
-		}
 
 #ifdef LWS_WITH_HTTP_PROXY
 		wsi->perform_rewrite = 0;
@@ -1180,7 +1176,6 @@ lws_generate_client_handshake(struct lws *wsi, char *pkt)
 		if (n != 16) {
 			lwsl_err("Unable to read from random dev %s\n",
 				 SYSTEM_RANDOM_FILEPATH);
-			lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS);
 			return NULL;
 		}
 
@@ -1291,8 +1286,9 @@ lws_generate_client_handshake(struct lws *wsi, char *pkt)
 
 	/* give userland a chance to append, eg, cookies */
 
-	wsi->protocol->callback(wsi, LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER,
-				wsi->user_space, &p, (pkt + context->pt_serv_buf_size) - p - 12);
+	if (wsi->protocol->callback(wsi, LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER,
+				wsi->user_space, &p, (pkt + context->pt_serv_buf_size) - p - 12))
+		return NULL;
 
 	p += sprintf(p, "\x0d\x0a");
 

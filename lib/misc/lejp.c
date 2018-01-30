@@ -25,7 +25,7 @@
 
 void
 lejp_construct(struct lejp_ctx *ctx,
-	char (*callback)(struct lejp_ctx *ctx, char reason), void *user,
+	signed char (*callback)(struct lejp_ctx *ctx, char reason), void *user,
 			const char * const *paths, unsigned char count_paths)
 {
 	ctx->st[0].s = 0;
@@ -86,7 +86,7 @@ lejp_destruct(struct lejp_ctx *ctx)
 
 void
 lejp_change_callback(struct lejp_ctx *ctx,
-		       char (*callback)(struct lejp_ctx *ctx, char reason))
+		     signed char (*callback)(struct lejp_ctx *ctx, char reason))
 {
 	ctx->callback(ctx, LEJPCB_DESTRUCTED);
 	ctx->callback = callback;
@@ -444,7 +444,7 @@ lejp_parse(struct lejp_ctx *ctx, const unsigned char *json, int len)
 				goto append_npos;
 			}
 			if (c == '.') {
-				if (ctx->dcount || (ctx->f & LEJP_SEEN_POINT)) {
+				if (!ctx->dcount || (ctx->f & LEJP_SEEN_POINT)) {
 					ret = LEJP_REJECT_MP_VAL_NUM_FORMAT;
 					goto reject;
 				}

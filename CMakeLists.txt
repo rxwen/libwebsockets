@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 2.8.9)
 
+# General Advice
+#
+# For selecting between DEBUG / RELEASE, use -DCMAKE_BUILD_TYPE=DEBUG or =RELEASE
+#   debug builds include source level debug info and extra logging
+
 if(NOT DEFINED CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type")
 endif()
@@ -10,7 +15,7 @@ set(PACKAGE "libwebsockets")
 set(CPACK_PACKAGE_NAME "${PACKAGE}")
 set(CPACK_PACKAGE_VERSION_MAJOR "2")
 set(CPACK_PACKAGE_VERSION_MINOR "4")
-set(CPACK_PACKAGE_VERSION_PATCH "0")
+set(CPACK_PACKAGE_VERSION_PATCH "1")
 set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH}")
 set(CPACK_PACKAGE_VENDOR "andy@warmcat.com")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PACKAGE} ${PACKAGE_VERSION}")
@@ -1169,6 +1174,16 @@ endforeach()
 
 set (temp ${CMAKE_REQUIRED_LIBRARIES})
 set(CMAKE_REQUIRED_LIBRARIES ${LIB_LIST})
+
+if (LWS_WITH_ZLIB)
+	if (LWS_WITH_BUNDLED_ZLIB)
+		if (WIN32)
+			# it's trying to delete internal zlib entry
+			LIST(REMOVE_AT CMAKE_REQUIRED_LIBRARIES 0 )
+		endif()
+	endif()
+endif()
+
 CHECK_FUNCTION_EXISTS(SSL_CTX_set1_param LWS_HAVE_SSL_CTX_set1_param)
 CHECK_FUNCTION_EXISTS(SSL_set_info_callback LWS_HAVE_SSL_SET_INFO_CALLBACK)
 CHECK_FUNCTION_EXISTS(X509_VERIFY_PARAM_set1_host LWS_HAVE_X509_VERIFY_PARAM_set1_host)
@@ -1603,12 +1618,13 @@ if (NOT LWS_WITHOUT_TESTAPPS)
 			      "plugins/protocol_post_demo.c" "" "")
 		create_plugin(protocol_lws_table_dirlisting ""
 			      "plugins/generic-table/protocol_table_dirlisting.c" "" "")
+if (LWS_WITH_SSL)
 		create_plugin(protocol_lws_ssh_base "plugins/ssh-base/include"
 			      "plugins/ssh-base/sshd.c;plugins/ssh-base/telnet.c;plugins/ssh-base/kex-25519.c" "plugins/ssh-base/crypto/chacha.c;plugins/ssh-base/crypto/ed25519.c;plugins/ssh-base/crypto/fe25519.c;plugins/ssh-base/crypto/ge25519.c;plugins/ssh-base/crypto/poly1305.c;plugins/ssh-base/crypto/sc25519.c;plugins/ssh-base/crypto/smult_curve25519_ref.c" "")
 		create_plugin(protocol_lws_sshd_demo "plugins/ssh-base/include" "plugins/protocol_lws_sshd_demo.c" "" "")
 
-
 		include_directories("${PROJECT_SOURCE_DIR}/plugins/ssh-base/include")
+endif()
 
 		if (NOT WIN32)
 			create_plugin(protocol_lws_raw_test ""

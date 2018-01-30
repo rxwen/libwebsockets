@@ -190,7 +190,7 @@ callback_lws_mirror(struct lws *wsi, enum lws_callback_reasons reason,
 	struct mirror_instance *mi = NULL;
 	const struct a_message *msg;
 	struct a_message amsg;
-	char name[300], update_worst, sent_something;
+	char name[300], update_worst, sent_something, *pn = name;
 	uint32_t oldest_tail;
 	int n, count_mi = 0;
 
@@ -206,19 +206,22 @@ callback_lws_mirror(struct lws *wsi, enum lws_callback_reasons reason,
 		if (lws_get_urlarg_by_name(wsi, "mirror", name,
 					   sizeof(name) - 1))
 			lwsl_debug("get urlarg failed\n");
-		lwsl_info("%s: mirror name '%s'\n", __func__, name);
+		if (strchr(name, '='))
+			pn = strchr(name, '=') + 1;
+
+		lwsl_notice("%s: mirror name '%s'\n", __func__, pn);
 
 		/* is there already a mirror instance of this name? */
 
 		lws_start_foreach_ll(struct mirror_instance *, mi1,
 				     v->mi_list) {
 			count_mi++;
-			if (strcmp(name, mi1->name))
-				continue;
-			/* yes... we will join it */
-			lwsl_info("Joining existing mi %p '%s'\n", mi1, name);
-			mi = mi1;
-			break;
+			if (!strcmp(pn, mi1->name)) {
+				/* yes... we will join it */
+				lwsl_notice("Joining existing mi %p '%s'\n", mi1, pn);
+				mi = mi1;
+				break;
+			}
 		} lws_end_foreach_ll(mi1, next);
 
 		if (!mi) {
@@ -242,10 +245,10 @@ callback_lws_mirror(struct lws *wsi, enum lws_callback_reasons reason,
 
 			mi->next = v->mi_list;
 			v->mi_list = mi;
-			strcpy(mi->name, name);
+			lws_snprintf(mi->name, sizeof(mi->name) - 1, "%s", pn);
 			mi->rx_enabled = 1;
 
-			lwsl_info("Created new mi %p '%s'\n", mi, name);
+			lwsl_notice("Created new mi %p '%s'\n", mi, pn);
 		}
 
 		/* add our pss to list of guys bound to this mi */
@@ -293,14 +296,13 @@ callback_lws_mirror(struct lws *wsi, enum lws_callback_reasons reason,
 
 		lws_start_foreach_llp(struct mirror_instance **,
 				pmi, v->mi_list) {
-			if (*pmi != mi)
-				continue;
+			if (*pmi == mi) {
+				*pmi = (*pmi)->next;
 
-			*pmi = (*pmi)->next;
-
-			lws_ring_destroy(mi->ring);
-			free(mi);
-			break;
+				lws_ring_destroy(mi->ring);
+				free(mi);
+				break;
+			}
 		} lws_end_foreach_llp(pmi, next);
 
 		break;
