@@ -17,13 +17,15 @@ include $(CLEAR_VARS)
 LOCAL_MODULE_TAGS := eng
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/android_config \
 	$(LOCAL_PATH)/lib \
+	$(LOCAL_PATH)/lib/misc \
 	$(LOCAL_PATH)/lib/mbedtls_wrapper/include \
 	$(LOCAL_PATH)/lib/mbedtls_wrapper/include/internal \
 	$(LOCAL_PATH)/lib/mbedtls_wrapper/include/platform \
 	external/mbedtls/include \
+	external/zlib \
 	external/libevent/include
 
-LOCAL_CFLAGS += 
+LOCAL_CFLAGS +=
 
 LOCAL_SRC_FILES := \
 	lib/alloc.c \
@@ -63,6 +65,7 @@ LOCAL_SRC_FILES := \
 	lib/mbedtls_wrapper/platform/ssl_pm.c \
 	lib/mbedtls_wrapper/platform/ssl_port.c \
 	lib/event-libs/libevent.c \
+	lib/misc/getifaddrs.c \
 	lib/ssl.c
 
 	#lib/event-libs/libev.c \
@@ -97,7 +100,7 @@ LOCAL_SRC_FILES := \
 	#lib/server/rewrite.c \
 
 LOCAL_LDLIBS += -ldl
-LOCAL_SHARED_LIBRARIES := \
+LOCAL_SHARED_LIBRARIES := libdl \
 	libmbedtls \
 	libevent \
 	libz

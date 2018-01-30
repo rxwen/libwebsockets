@@ -105,7 +105,7 @@
 /* Define to 1 if you have the <zlib.h> header file. */
 #define LWS_HAVE_ZLIB_H
 
-#define LWS_HAVE_GETLOADAVG
+/* #undef LWS_HAVE_GETLOADAVG */
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */
@@ -118,7 +118,7 @@
 /* #undef realloc */
 
 /* Define to 1 if we have getifaddrs */
-#define LWS_HAVE_GETIFADDRS
+#define LWS_HAVE_GETIFADDRS 0
 
 /* Define if the inline keyword doesn't exist. */
 /* #undef inline */
