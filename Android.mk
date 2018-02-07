@@ -18,11 +18,8 @@ LOCAL_MODULE_TAGS := eng
 LOCAL_C_INCLUDES := $(LOCAL_PATH)/android_config \
 	$(LOCAL_PATH)/lib \
 	$(LOCAL_PATH)/lib/misc \
-	$(LOCAL_PATH)/lib/mbedtls_wrapper/include \
-	$(LOCAL_PATH)/lib/mbedtls_wrapper/include/internal \
-	$(LOCAL_PATH)/lib/mbedtls_wrapper/include/platform \
-	external/mbedtls/include \
 	external/zlib \
+	external/openssl/include \
 	external/libevent/include
 
 LOCAL_CFLAGS +=
@@ -56,14 +53,6 @@ LOCAL_SRC_FILES := \
 	lib/server/peer-limits.c \
 	lib/server/access-log.c \
 	lib/service.c \
-	lib/mbedtls_wrapper/library/ssl_cert.c \
-	lib/mbedtls_wrapper/library/ssl_lib.c \
-	lib/mbedtls_wrapper/library/ssl_methods.c \
-	lib/mbedtls_wrapper/library/ssl_pkey.c \
-	lib/mbedtls_wrapper/library/ssl_stack.c \
-	lib/mbedtls_wrapper/library/ssl_x509.c \
-	lib/mbedtls_wrapper/platform/ssl_pm.c \
-	lib/mbedtls_wrapper/platform/ssl_port.c \
 	lib/event-libs/libevent.c \
 	lib/misc/getifaddrs.c \
 	lib/ssl.c
@@ -101,7 +90,8 @@ LOCAL_SRC_FILES := \
 
 LOCAL_LDLIBS += -ldl
 LOCAL_SHARED_LIBRARIES := libdl \
-	libmbedtls \
+	libssl \
+	libcrypto \
 	libevent \
 	libz
 
