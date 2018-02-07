@@ -89,11 +89,15 @@ LOCAL_SRC_FILES := \
 	#lib/server/rewrite.c \
 
 LOCAL_LDLIBS += -ldl
-LOCAL_SHARED_LIBRARIES := libdl \
+LOCAL_SHARED_LIBRARIES := \
 	libssl \
 	libcrypto \
 	libevent \
 	libz
+
+ifneq ($(TARGET_SIMULATOR),true)
+	LOCAL_SHARED_LIBRARIES += libdl
+endif
 
 LOCAL_MODULE := libwebsockets
 include $(BUILD_SHARED_LIBRARY)
