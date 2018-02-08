@@ -17,7 +17,7 @@
 /* #undef USE_OLD_CYASSL */
 /* #undef LWS_WITH_BORINGSSL */
 
-/* #undef LWS_WITH_MBEDTLS */
+#define LWS_WITH_MBEDTLS
 /* #undef LWS_WITH_POLARSSL */
 /* #undef LWS_WITH_ESP8266 */
 /* #undef LWS_WITH_ESP32 */
@@ -91,7 +91,7 @@
 /* SSL server using ECDH certificate */
 /* #undef LWS_SSL_SERVER_WITH_ECDH_CERT */
 /* #undef LWS_HAVE_SSL_CTX_set1_param */
-/* #undef LWS_HAVE_X509_VERIFY_PARAM_set1_host */
+#define LWS_HAVE_X509_VERIFY_PARAM_set1_host
 /* #undef LWS_HAVE_RSA_SET0_KEY */
 
 /* #undef LWS_HAVE_UV_VERSION_H */
@@ -147,8 +147,8 @@
 
 /* OpenSSL various APIs */
 
-/* #undef LWS_HAVE_TLS_CLIENT_METHOD */
-#define LWS_HAVE_TLSV1_2_CLIENT_METHOD
+#define LWS_HAVE_TLS_CLIENT_METHOD
+/* #undef LWS_HAVE_TLSV1_2_CLIENT_METHOD */
 /* #undef LWS_HAVE_SSL_SET_INFO_CALLBACK */
 
 #define LWS_HAS_INTPTR_T
