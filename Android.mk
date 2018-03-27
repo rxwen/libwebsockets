@@ -25,7 +25,7 @@ LOCAL_C_INCLUDES := $(LOCAL_PATH)/android_config \
 	external/zlib \
 	external/libevent/include
 
-LOCAL_CFLAGS +=
+LOCAL_CFLAGS += -D__ANDROID__
 
 LOCAL_SRC_FILES := \
 	lib/alloc.c \
