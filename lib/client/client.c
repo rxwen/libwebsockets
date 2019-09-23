@@ -806,11 +806,15 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 			pc++;
 	}
 
-	if (!okay) {
-		lwsl_err("lws_client_int_s_hs: got bad protocol %s\n", p);
-		cce = "HS: PROTOCOL malformed";
-		goto bail2;
-	}
+    if (!lws_check_opt(context->options, LWS_SERVER_OPTION_FOR_SONOS)) {
+        if (!okay) {
+            lwsl_err("lws_client_int_s_hs: got bad protocol %s\n", p);
+            cce = "HS: PROTOCOL malformed";
+            goto bail2;
+        }
+    } else {
+            lwsl_err("for sonos, skip subprotocol check\n");
+    }
 
 	/*
 	 * identify the selected protocol struct and set it
@@ -1204,13 +1208,19 @@ lws_generate_client_handshake(struct lws *wsi, char *pkt)
 	p += sprintf(p, "Host: %s\x0d\x0a",
 		     lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_HOST));
 
-	if (lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_ORIGIN)) {
-		if (lws_check_opt(context->options, LWS_SERVER_OPTION_JUST_USE_RAW_ORIGIN))
-			p += sprintf(p, "Origin: %s\x0d\x0a",
-				     lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_ORIGIN));
-		else
-			p += sprintf(p, "Origin: http://%s\x0d\x0a",
-				     lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_ORIGIN));
+    if (lws_check_opt(context->options, LWS_SERVER_OPTION_FOR_SONOS)) {
+      lwsl_err("for sonos, set specific header\n");
+      p += sprintf(p, "X-Sonos-Api-Key: 123e4567-e89b-12d3-a456-426655440000\x0d\x0a");
+      p += sprintf(p, "Sec-WebSocket-Protocol: v1.api.smartspeaker.audio\x0d\x0a");
+    } else {
+        if (lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_ORIGIN)) {
+            if (lws_check_opt(context->options, LWS_SERVER_OPTION_JUST_USE_RAW_ORIGIN))
+                p += sprintf(p, "Origin: %s\x0d\x0a",
+                         lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_ORIGIN));
+            else
+                p += sprintf(p, "Origin: http://%s\x0d\x0a",
+                         lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_ORIGIN));
+        }
 	}
 
 	if (wsi->do_ws) {

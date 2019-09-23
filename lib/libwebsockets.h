@@ -2088,6 +2088,7 @@ enum lws_context_options {
 	 * LWS_CALLBACK_OPENSSL_LOAD_EXTRA_SERVER_VERIFY_CERTS callback, which
 	 * provides the vhost SSL_CTX * in the user parameter.
 	 */
+	LWS_SERVER_OPTION_FOR_SONOS			= (1 << 25),
 
 	/****** add new things just above ---^ ******/
 };
