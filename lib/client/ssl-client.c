@@ -153,7 +153,11 @@ lws_ssl_client_bio_create(struct lws *wsi)
 #if !defined(USE_WOLFSSL) && !defined(LWS_WITH_MBEDTLS)
 #ifndef USE_OLD_CYASSL
 	/* OpenSSL_client_verify_callback will be called @ SSL_connect() */
-	SSL_set_verify(wsi->ssl, SSL_VERIFY_PEER, OpenSSL_client_verify_callback);
+    if(wsi->use_ssl & LCCSCF_ALLOW_SELFSIGNED) {
+        SSL_set_verify(wsi->ssl, SSL_VERIFY_NONE, OpenSSL_client_verify_callback);
+    } else {
+        SSL_set_verify(wsi->ssl, SSL_VERIFY_PEER, OpenSSL_client_verify_callback);
+    }
 #endif
 #endif
 
